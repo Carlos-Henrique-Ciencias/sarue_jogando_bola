@@ -1,0 +1,16 @@
+{
+  "name": "frontend-erp",
+  "version": "0.0.0",
+  "description": "Frontend ultra-lightweight para POC do ERP Gov",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "solid-js": "^1.8.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "vite-plugin-solid": "^2.8.0"
+  }
+}
