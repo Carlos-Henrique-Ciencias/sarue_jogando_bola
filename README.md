@@ -1,2 +1,3 @@
-cargo run, no backend
-npm run tauri dev, no front
+docker compose up -d
+docker compose start
+docker compose stop
