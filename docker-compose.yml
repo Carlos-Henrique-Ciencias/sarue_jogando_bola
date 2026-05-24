@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres-erp:
+    image: postgres:16-alpine
+    container_name: postgres-erp
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: govcore_erp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # O pulo do gato: injeta o script e cria as 24 tabelas automaticamente
+      - ./schema.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  redis-erp:
+    image: redis:7-alpine
+    container_name: redis-erp
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
