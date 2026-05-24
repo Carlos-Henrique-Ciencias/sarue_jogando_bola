@@ -1,6 +1,5 @@
-version: '3.8'
-
 services:
+  # 1. BANCO DE DADOS (POSTGRES)
   postgres-erp:
     image: postgres:16-alpine
     container_name: postgres-erp
@@ -12,10 +11,15 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # O pulo do gato: injeta o script e cria as 24 tabelas automaticamente
       - ./schema.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d govcore_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # 2. CACHE E FILAS (REDIS)
   redis-erp:
     image: redis:7-alpine
     container_name: redis-erp
@@ -25,6 +29,40 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  # 3. BACK-END (RUST AXUM)
+  backend-erp:
+    image: rust:1.76-alpine # Ou a versão que você preferir
+    container_name: backend-erp
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - cargo_cache:/usr/local/cargo/registry
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://postgres:root@postgres-erp:5432/govcore_erp
+      - REDIS_URL=redis://redis-erp:6379
+    command: cargo run # Roda direto o live-reload/compilação em desenvolvimento
+    depends_on:
+      postgres-erp:
+        condition: service_healthy
+      redis-erp:
+        condition: service_started
+
+  # 4. FRONT-END (SOLIDJS)
+  frontend-erp:
+    image: node:20-alpine
+    container_name: frontend-erp
+    working_dir: /app
+    volumes:
+      - ./frontend:/app # Mapeia a pasta do front quando ela existir
+    ports:
+      - "5173:5173" # Porta padrão do Vite
+    command: sh -c "npm install && npm run dev -- --host"
+    depends_on:
+      - backend-erp
+
 volumes:
   postgres_data:
   redis_data:
+  cargo_cache: # Evita que o Rust rebaixe todas as crates do zero toda vez
